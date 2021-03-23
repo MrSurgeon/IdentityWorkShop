@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using AutoMapper;
+using EmailService;
 using IdentityWorkShop.Identity.Introduction.IdentityOptionsValidations;
 using IdentityWorkShop.Identity.Introduction.Mapping;
 using IdentityWorkShop.Identity.Introduction.Models;
@@ -29,17 +30,27 @@ namespace IdentityWorkShop.Identity.Introduction
 
         public void ConfigureServices(IServiceCollection services)
         {
-            
+
             services.AddDbContext<AppIdentityDbContext>(opts =>
             {
                 opts.UseSqlServer(_configuration["ConnectionStrings:MainComputerConnectionString"]);
             });
 
+            //E-mail Service Ayarlamalarý
+            var emailConfig = _configuration.GetSection("EmailConfiguration")
+                .Get<EmailConfiguration>();
+
+            services.AddSingleton(emailConfig);
+            services.AddScoped<IEmailSender, EmailSender>();
+
+            //Identity Service Ayarlamalarý
+
             services.AddIdentity<AppUser, AppRole>()
                 .AddEntityFrameworkStores<AppIdentityDbContext>()
                 .AddPasswordValidator<IdentityPasswordVadlidator>()
                 .AddUserValidator<IdentityUserValidator>()
-                .AddErrorDescriber<CustomIdentityErrorDescriber>();
+                .AddErrorDescriber<CustomIdentityErrorDescriber>()
+                .AddDefaultTokenProviders();
 
             services.Configure<IdentityOptions>(options =>
             {
@@ -56,7 +67,7 @@ namespace IdentityWorkShop.Identity.Introduction
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
 
                 ////User Kurallarý
-                options.User.AllowedUserNameCharacters= "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._";// Türkçe karakterlerin user isimlendirmede kullanýlmasýný saðlayabiliriz.
+                options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._";// Türkçe karakterlerin user isimlendirmede kullanýlmasýný saðlayabiliriz.
                 options.User.RequireUniqueEmail = true;// Bu komut her kullanýcýnýn farklý bir emaili olmasýný denetler.
 
                 ////SignIn Kurallarý
@@ -67,7 +78,7 @@ namespace IdentityWorkShop.Identity.Introduction
             services.ConfigureApplicationCookie(options =>
             {
                 options.LoginPath = new PathString("/Home/Login");
-                //options.LogoutPath = "/account/logout";
+                options.LogoutPath = new PathString("/Member/Logout");
                 //options.AccessDeniedPath = "/account/accessdenied";
                 options.SlidingExpiration = true;
                 options.ExpireTimeSpan = TimeSpan.FromDays(60);
@@ -79,16 +90,24 @@ namespace IdentityWorkShop.Identity.Introduction
                     SecurePolicy = CookieSecurePolicy.SameAsRequest
                 };
             });
+            services.Configure<DataProtectionTokenProviderOptions>(opt =>
+            {
+                opt.TokenLifespan = TimeSpan.FromHours(2);
+            });
 
+            //AutoMapper
             var mapperConfig = new MapperConfiguration(mc =>
             {
                 mc.AddProfile(new MappingProfile());
             });
 
             IMapper mapper = mapperConfig.CreateMapper();
+
+
             services.AddSingleton(mapper);
 
-            services.AddMvc();
+
+            services.AddControllersWithViews();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

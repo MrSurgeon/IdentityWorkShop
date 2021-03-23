@@ -14,6 +14,10 @@ namespace IdentityWorkShop.Identity.Introduction.Mapping
         {
             CreateMap<SignUpViewModel,AppUser>();
             CreateMap<LoginViewModel, AppUser>();
+            CreateMap<UserViewModel, AppUser>();
+            CreateMap<AppUser,UserViewModel>();
+            CreateMap<AppUser, UserEditViewModel>();
+            CreateMap<UserEditViewModel, AppUser>();
         }
     }
 }

@@ -12,5 +12,15 @@ namespace IdentityWorkShop.Identity.Introduction.Models
         public AppIdentityDbContext(DbContextOptions<AppIdentityDbContext> options):base(options)
         {
         }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            //builder.Entity<AppUser>(builder =>
+            //{
+            //    builder.Property(p => p.City).HasMaxLength(100);
+            //});
+        }
     }
 }
